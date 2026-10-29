@@ -56,3 +56,4 @@ textarea.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size
 .log li { margin-bottom: 8px; }
 .warn { background: var(--warn); border-radius: 8px; padding: 12px 16px; }
 ul.plain { margin: 0; padding-left: 18px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
