@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request your detailed study | HeatHarvest</title>
+<meta name="description" content="Send HeatHarvest your site's exhaust data and receive a detailed waste-heat recovery study: technology, size, space, investment and payback.">
+<meta name="theme-color" content="#F7F8F6">
+<link rel="icon" href="assets/img/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/site.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body class="page-study">
+
+<header class="site-header site-header--static">
+  <a class="brand" href="/"><img src="assets/img/logo-horizontal.png" alt="HeatHarvest, Powering Sustainable Industry" width="817" height="200"></a>
+  <nav class="nav" aria-label="Main">
+    <a href="/#estimate" class="link">Estimate</a>
+    <a href="/#how" class="link">How it works</a>
+    <a href="/#contact" class="button button--ink button--small">Contact us</a>
+  </nav>
+</header>
+
+<main class="sf">
+  <div class="sf__intro">
+    <h1>Your detailed study</h1>
+    <p>Tell us about your site and its hot exhaust streams. Our engineers prepare a study with the right technology and size, the space it needs, the investment and the payback, and send it to you within a few days.</p>
+    <p class="sf__aside">Approximate figures are fine. Where you are unsure, leave the field empty and we will use typical values for your sector and check them with you.</p>
+  </div>
+
+  <form id="study-form" class="sf__form" novalidate>
+    <fieldset class="sf__group">
+      <legend>About you</legend>
+      <div class="sf__grid">
+        <label>Your name <input name="c_name" autocomplete="name" required></label>
+        <label>Work email <input name="c_email" type="email" autocomplete="email" required></label>
+        <label>Phone <span class="opt">optional</span><input name="c_phone" type="tel" autocomplete="tel"></label>
+        <label>Job title <span class="opt">optional</span><input name="c_role" autocomplete="organization-title"></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="sf__group">
+      <legend>The site</legend>
+      <div class="sf__grid">
+        <label>Company <input name="company" autocomplete="organization" required></label>
+        <label>Site or plant name <input name="site_name" required placeholder="For example: Kiln line 2"></label>
+        <label>Nearest city <select name="city" id="f-city" required></select></label>
+        <label>Industry <select name="sector" id="f-sector" required></select></label>
+        <label>Running hours a year <input name="operating_hours" type="number" inputmode="numeric" min="1000" max="8760" step="10" value="8000" required></label>
+        <label>Free area for the plant <span class="opt">m², optional</span><input name="available_area_m2" type="number" inputmode="numeric" min="1" step="1"></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="sf__group">
+      <legend>Hot exhaust streams</legend>
+      <p class="sf__hint">One entry for each stack, duct or exhaust you could recover heat from.</p>
+      <ol class="sources" id="sources"></ol>
+      <button type="button" class="button button--ink button--small" id="add-source">Add another stream</button>
+    </fieldset>
+
+    <fieldset class="sf__group">
+      <legend>What the energy is worth to you</legend>
+      <div class="sf__radios">
+        <label class="radio"><input type="radio" name="value_basis" value="electricity" checked><span>Electricity we would no longer buy</span></label>
+        <label class="radio"><input type="radio" name="value_basis" value="gas"><span>Gas we would no longer burn for power</span></label>
+      </div>
+      <div class="sf__grid">
+        <label data-basis="electricity">Electricity price <span class="opt">SAR per kWh</span><input name="electricity_value_sar_kwh" type="number" inputmode="decimal" min="0" max="3" step="0.001" value="0.18"></label>
+        <label data-basis="gas" hidden>Gas price <span class="opt">USD per MMBtu</span><input name="gas_price_usd_mmbtu" type="number" inputmode="decimal" min="0" max="40" step="0.01" value="1.25"></label>
+        <label data-basis="gas" hidden>Efficiency of your own power generation <span class="opt">%</span><input name="gas_generation_efficiency" type="number" inputmode="numeric" min="20" max="60" step="1" value="33"></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="sf__group">
+      <legend>Anything else</legend>
+      <label>Notes for our engineers <span class="opt">optional</span><textarea name="notes" rows="4" placeholder="Planned shutdowns, space limits, existing heat recovery, what you hope to achieve"></textarea></label>
+      <p class="hp"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></p>
+      <label class="check"><input type="checkbox" name="consent" required><span>HeatHarvest may use this data to prepare my study and contact me about it. It is kept confidential.</span></label>
+    </fieldset>
+
+    <div class="sf__submit">
+      <button type="submit" class="button" id="sf-submit">Send my site data</button>
+      <div id="sf-status" class="sf__status" role="status" aria-live="polite"></div>
+    </div>
+  </form>
+
+  <section class="sf__done" id="sf-done" hidden tabindex="-1" aria-labelledby="done-title">
+    <h2 id="done-title">Thank you. Your data reached us.</h2>
+    <p>Your request number is <b id="done-id"></b>. Our engineers are preparing your study and will send it to <b id="done-email"></b> within a few days. A confirmation email is on its way.</p>
+    <a class="button button--ink" href="/">Back to the home page</a>
+  </section>
+</main>
+
+<template id="source-tpl">
+  <li class="source">
+    <div class="source__head"><h3>Stream <span class="n"></span></h3><button type="button" class="link source__remove">Remove</button></div>
+    <div class="sf__grid">
+      <label>Name <input data-k="name" required placeholder="For example: Preheater exhaust"></label>
+      <label>Gas flow
+        <span class="sf__pair"><input data-k="flow" type="number" inputmode="decimal" min="0" step="any" required><select data-k="flow_unit" aria-label="Flow unit"><option value="kg_s">kg/s</option><option value="nm3_h">Nm³/h</option></select></span>
+      </label>
+      <label>Gas temperature <span class="opt">°C</span><input data-k="temp_in_c" type="number" inputmode="numeric" min="80" max="1200" step="1" required></label>
+      <label>Lowest outlet temperature <span class="opt">°C, optional</span><input data-k="min_outlet_c" type="number" inputmode="numeric" min="40" max="600" step="1" placeholder="Typical value for your industry"></label>
+      <label>Dust in the gas <select data-k="dust"><option value="low">Little or none</option><option value="medium">Some</option><option value="high">A lot (for example cement or steel)</option></select></label>
+      <label>Share of running hours <span class="opt">%</span><input data-k="hours_pct" type="number" inputmode="numeric" min="1" max="100" step="1" value="100"></label>
+    </div>
+  </li>
+</template>
+
+<footer class="site-footer site-footer--slim">
+  <div class="footer__end">
+    <span>© 2026 HeatHarvest. Powering Sustainable Industry.</span>
+    <a class="link" href="mailto:awad.alquaity@kfupm.edu.sa">awad.alquaity@kfupm.edu.sa</a>
+  </div>
+</footer>
+
+<script src="assets/js/study.js" defer></script>
+</body>
+</html>

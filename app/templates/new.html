@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% set active = 'studies' %}
+{% block title %}Enter a study{% endblock %}
+{% block content %}
+<div class="stack" style="max-width:900px">
+  <a href="/admin" class="small">All study requests</a>
+  <h1>Enter a study yourself</h1>
+  <p class="muted">For sites you are screening, or data a client sent by email. Fill in the inputs below; the study is calculated as soon as you save.</p>
+  {% if error %}<p class="flash bad small">{{ error }}</p>{% endif %}
+  <form method="post" action="/admin/new" class="panel stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row" style="align-items:stretch">
+      <label style="flex:1 1 260px">Contact name <input name="contact_name" required></label>
+      <label style="flex:1 1 260px">Contact email <input type="email" name="contact_email" required></label>
+    </div>
+    <label for="input_json">Site inputs</label>
+    <textarea id="input_json" name="input_json" class="code" spellcheck="false">{{ example }}</textarea>
+    <details class="small"><summary>What the input fields mean</summary>
+      <ul class="plain">
+        <li><b>city</b>: one of the cities on the website's study form (sets the climate).</li>
+        <li><b>sector</b>: cement, glass, steel, gas_compression, power, chemicals or other.</li>
+        <li><b>heat_sources</b>: each with name, mass_flow_kg_s (or volume_flow_nm3_h), temp_in_c, optional min_outlet_c, cp_kj_kgk (default 1.08), dust (low, medium, high), hours_share (0–1).</li>
+        <li><b>operating_hours</b>, <b>electricity_value_sar_kwh</b>, <b>value_basis</b> (electricity or gas), <b>gas_price_usd_mmbtu</b>, <b>gas_generation_efficiency</b>, <b>available_area_m2</b>, <b>discount_rate</b>, <b>project_life_years</b>, <b>co2_t_per_mwh</b>, <b>notes</b>.</li>
+      </ul>
+    </details>
+    <div class="row"><button class="btn btn--green" type="submit">Save and calculate</button></div>
+  </form>
+</div>
+{% endblock %}

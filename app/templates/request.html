@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set active = 'studies' %}
+{% block title %}#{{ req.id }} {{ req.company }}{% endblock %}
+{% block content %}
+{% set base = res.scenarios[1] if res and res.scenarios else None %}
+<div class="stack">
+  <div class="row spread">
+    <div class="stack" style="gap:6px">
+      <a href="/admin" class="small">All study requests</a>
+      <h1>#{{ req.id }} {{ req.company }}</h1>
+      <p class="muted">{{ req.site_name }} · received {{ req.created_at.strftime('%d %B %Y, %H:%M') }} UTC</p>
+    </div>
+    <span class="chip {{ req.status }}" style="font-size:14px;padding:6px 14px">{{ STATUS_LABELS[req.status] }}</span>
+  </div>
+
+  {% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+  {% if req.status == 'error' %}<div class="warn"><b>The calculation failed.</b> Check the inputs below, correct them and recalculate.<br><span class="small">{{ req.error }}</span></div>{% endif %}
+
+  <div class="grid2">
+    <div class="stack">
+      {% if res %}
+      <section class="panel stack">
+        <div class="row spread"><h2>Result</h2><span class="chip {{ res.verdict }}">{{ res.verdict.replace('_', ' ')|capitalize }}</span></div>
+        <p>{{ res.verdict_text }}</p>
+        {% if res.feasible and base %}
+        <div class="kpis">
+          <div class="kpi"><b>{{ '%.2f'|format(res.net_power_kw / 1000) }} MWe</b><span>Net power at {{ '%.0f'|format(res.design_ambient_c) }} °C</span></div>
+          <div class="kpi"><b>{{ '{:,.1f}'.format(res.annual_energy_mwh / 1000) }} GWh</b><span>Electricity a year</span></div>
+          <div class="kpi"><b>SAR {{ '{:,.1f}'.format(base.capex_sar / 1e6) }}m</b><span>Investment, expected</span></div>
+          <div class="kpi"><b>{{ base.payback_years if base.payback_years else 'Over 30' }} yr</b><span>Simple payback</span></div>
+          <div class="kpi"><b>SAR {{ '{:,.1f}'.format(base.npv_sar / 1e6) }}m</b><span>Net present value</span></div>
+          <div class="kpi"><b>{{ '{:,.0f}'.format(res.co2_t_per_year) }} t</b><span>CO₂ avoided a year</span></div>
+        </div>
+        <div class="tablewrap">
+          <table class="small">
+            <thead><tr><th>Case</th><th>Net power</th><th>Investment</th><th>Value a year</th><th>Payback</th><th>IRR</th></tr></thead>
+            <tbody>
+            {% for s in res.scenarios %}
+            <tr><td>{{ {'low': 'Cautious', 'base': 'Expected', 'high': 'Favourable'}[s.name] }}</td>
+              <td class="num">{{ '%.2f'|format(s.net_power_kw / 1000) }} MWe</td>
+              <td class="num">SAR {{ '{:,.1f}'.format(s.capex_sar / 1e6) }}m</td>
+              <td class="num">SAR {{ '{:,.1f}'.format(s.revenue_sar / 1e6) }}m</td>
+              <td class="num">{{ s.payback_years if s.payback_years else '–' }}</td>
+              <td class="num">{{ '%.1f%%'|format(s.irr * 100) if s.irr is not none else '–' }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted">{{ res.configuration }}. {{ res.fluid_label }}, evaporating {{ '%.0f'|format(res.evaporating_c) }} °C, condensing {{ '%.0f'|format(res.condensing_c) }} °C, cycle efficiency {{ '%.1f%%'|format(res.cycle_efficiency * 100) }}. Heat recovered {{ '{:,.1f}'.format(res.heat_recovered_kw / 1000) }} of {{ '{:,.1f}'.format(res.heat_available_kw / 1000) }} MW available. Summer output {{ '%.2f'|format(res.summer_net_power_kw / 1000) }} MWe.</p>
+        {% endif %}
+        {% if res.warnings %}<div class="warn small"><b>Check before approving</b><ul class="plain">{% for w in res.warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>{% endif %}
+        <div class="row">
+          <a class="btn btn--ghost" href="/admin/requests/{{ req.id }}/study.pdf" target="_blank" rel="noopener">{{ 'Open the study PDF' if req.status in ('approved', 'sent') else 'Open the draft PDF' }}</a>
+          {% if req.status == 'draft' %}
+          <form method="post" action="/admin/requests/{{ req.id }}/approve"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn--green" type="submit">I have checked it: approve</button></form>
+          {% endif %}
+        </div>
+        {% if req.reviewer %}<p class="small muted">Approved by {{ req.reviewer }}{% if req.approved_at %} on {{ req.approved_at.strftime('%d %B %Y') }}{% endif %}.</p>{% endif %}
+      </section>
+      {% endif %}
+
+      {% if req.status in ('approved', 'sent') %}
+      <section class="panel stack">
+        <h2>{{ 'Send it again' if req.status == 'sent' else 'Send to the client' }}</h2>
+        {% if not mail_ok %}<p class="warn small">Email is not set up, so this cannot send. Download the PDF, email it yourself, then mark it as sent.</p>{% endif %}
+        <form method="post" action="/admin/requests/{{ req.id }}/send" class="stack">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <label>To <input value="{{ req.contact_name }} <{{ req.contact_email }}>" disabled></label>
+          <label>Message
+            <textarea name="message" rows="9">Dear {{ req.contact_name }},
+
+Please find attached the waste-heat recovery study for {{ req.site_name }}. It sets out the recoverable power, the plant we recommend, the investment and the expected returns, together with the assumptions behind them.
+
+We would be glad to discuss the results and the next steps, starting with a site visit and the measurements listed in the study.
+
+Kind regards,
+{{ user.name }}
+HeatHarvest</textarea></label>
+          <div class="row"><button class="btn btn--heat" type="submit" {% if not mail_ok %}disabled{% endif %}>Email the study with the PDF attached</button></div>
+        </form>
+        {% if req.status == 'approved' %}
+        <form method="post" action="/admin/requests/{{ req.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="mark_sent"><button class="btn btn--ghost" type="submit">I sent it myself: mark as sent</button></form>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      <section class="panel stack">
+        <h2>Inputs</h2>
+        <p class="small muted">Correct anything the client entered (flows, temperatures, prices), then recalculate. Recalculating returns the study to draft so it is checked again.</p>
+        <form method="post" action="/admin/requests/{{ req.id }}/rerun" class="stack">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <label class="sr-only" for="input_json">Inputs</label>
+          <textarea id="input_json" name="input_json" class="code" spellcheck="false">{{ input_text }}</textarea>
+          <div class="row"><button class="btn" type="submit">Save inputs and recalculate</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="panel stack">
+        <h2>Contact</h2>
+        <p><b>{{ req.contact_name }}</b>{% if req.contact_role %}, {{ req.contact_role }}{% endif %}<br>
+          <a href="mailto:{{ req.contact_email }}">{{ req.contact_email }}</a>{% if req.contact_phone %}<br>{{ req.contact_phone }}{% endif %}</p>
+        <p class="small muted">{{ SECTOR_LABELS.get(req.input_json.get('sector'), '') }} · {{ req.input_json.get('city') }} · {{ req.input_json.get('heat_sources', [])|length }} heat source(s)</p>
+        {% if req.input_json.get('notes') %}<p class="small"><b>Client's notes:</b> {{ req.input_json.get('notes') }}</p>{% endif %}
+      </section>
+      <section class="panel stack">
+        <h2>Internal notes</h2>
+        <form method="post" action="/admin/requests/{{ req.id }}/notes" class="stack">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <textarea name="internal_notes" rows="5" placeholder="Visible to the team only">{{ req.internal_notes }}</textarea>
+          <div class="row"><button class="btn btn--ghost" type="submit">Save notes</button></div>
+        </form>
+      </section>
+      <section class="panel stack">
+        <h2>Activity</h2>
+        <ul class="plain log small">
+          {% for e in events|reverse %}<li><span class="muted">{{ e.created_at.strftime('%d %b, %H:%M') }}</span> · {{ e.actor }}: {{ e.text }}</li>{% endfor %}
+        </ul>
+        <form method="post" action="/admin/requests/{{ req.id }}/status" class="row">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          {% if req.status == 'declined' %}
+          <input type="hidden" name="action" value="reopen"><button class="btn btn--ghost" type="submit">Reopen this request</button>
+          {% elif req.status != 'sent' %}
+          <input type="hidden" name="action" value="decline"><button class="btn btn--ghost" type="submit">Decline this request</button>
+          {% endif %}
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+<style>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}</style>
+{% endblock %}

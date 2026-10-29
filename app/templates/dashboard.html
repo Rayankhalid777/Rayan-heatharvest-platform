@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% set active = 'studies' %}
+{% block title %}Study requests{% endblock %}
+{% block content %}
+<div class="stack">
+  <div class="row spread">
+    <h1>Study requests</h1>
+    <div class="row">
+      {% if new_inq %}<a class="btn btn--ghost" href="/admin/inquiries">{{ new_inq }} new inquir{{ 'y' if new_inq == 1 else 'ies' }}</a>{% endif %}
+      <a class="btn btn--green" href="/admin/new">Enter a study yourself</a>
+    </div>
+  </div>
+  {% if not mail_ok %}<p class="warn small">Email is not set up yet, so the dashboard cannot email studies or notify you of new requests. Add the SMTP settings on Render (see the README). Until then, download each PDF and send it yourself.</p>{% endif %}
+  <nav class="tabs" aria-label="Filter by status">
+    <a href="/admin" class="{{ 'on' if not status }}">All</a>
+    {% for k, label in STATUS_LABELS.items() %}
+    <a href="/admin?status={{ k }}" class="{{ 'on' if status == k }}">{{ label }}{% if counts.get(k) %} ({{ counts.get(k) }}){% endif %}</a>
+    {% endfor %}
+  </nav>
+  <div class="panel tablewrap">
+    {% if reqs %}
+    <table>
+      <thead><tr><th>No.</th><th>Received</th><th>Company and site</th><th>Contact</th><th>Net power</th><th>Verdict</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in reqs %}
+      {% set res = r.result_json %}
+      <tr class="link" onclick="location.href='/admin/requests/{{ r.id }}'">
+        <td class="num"><a href="/admin/requests/{{ r.id }}">#{{ r.id }}</a></td>
+        <td class="num small">{{ r.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+        <td><b>{{ r.company }}</b><br><span class="muted small">{{ r.site_name }}</span></td>
+        <td class="small">{{ r.contact_name }}<br><span class="muted">{{ r.contact_email }}</span></td>
+        <td class="num">{% if res and res.feasible %}{{ '%.2f'|format(res.net_power_kw / 1000) }} MWe{% else %}–{% endif %}</td>
+        <td>{% if res %}<span class="chip {{ res.verdict }}">{{ res.verdict.replace('_', ' ')|capitalize }}</span>{% endif %}</td>
+        <td><span class="chip {{ r.status }}">{{ STATUS_LABELS[r.status] }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No study requests yet. They appear here when someone sends site data through the website's study form, or when you enter one yourself.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

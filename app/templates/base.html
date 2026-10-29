@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}Team dashboard{% endblock %} | HeatHarvest</title>
+<link rel="icon" href="/assets/img/favicon-32.png" type="image/png">
+<link rel="stylesheet" href="/admin-static/admin.css">
+</head>
+<body>
+{% if user %}
+<header class="top">
+  <a href="/admin"><img src="/assets/img/logo-horizontal.png" alt="HeatHarvest"></a>
+  <nav aria-label="Dashboard">
+    <a href="/admin" {% if active == 'studies' %}aria-current="page"{% endif %}>Study requests</a>
+    <a href="/admin/inquiries" {% if active == 'inquiries' %}aria-current="page"{% endif %}>Inquiries</a>
+    <a href="/admin/team" {% if active == 'team' %}aria-current="page"{% endif %}>Team</a>
+    <a href="/" target="_blank" rel="noopener">Website</a>
+    <form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn--ghost" type="submit">Sign out {{ user.name.split(' ')[0] }}</button></form>
+  </nav>
+</header>
+{% endif %}
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>
